@@ -4,6 +4,16 @@ import { useToast } from 'vuestic-ui'
 
 const goods = ref([])
 const cart = ref([])
+
+const user = ref({
+  firstName: '',
+  lastName: '',
+  date: '',
+  time: '',
+  address: '',
+  paymentMethod: ''
+})
+
 const doShowModal = ref(false)
 const doShowCart = ref(false)
 
@@ -12,6 +22,10 @@ const { init } = useToast()
 const countInCart = computed(() => (
   cart.value.reduce((total, item) => total + item.count, 0)
 ))
+
+const sumInCart = computed(() => {
+  return cart.value.reduce((total, item) => total + (item.count * item.price), 0);
+})
 
 const formData = ref({
   title: '',
@@ -43,7 +57,11 @@ function toCart(good) {
   } else {
     cart.value.push({ id: good.id, title: good.title, count: good.count, price: good.price })
   }
-  init('Товар добавлен в корзину!');
+  init({
+    message: 'Товар добавлен в корзину!',
+    offsetX: 100,
+    offsetY: 100,
+  });
 }
 
 function addGood() {
@@ -136,15 +154,54 @@ onMounted(() => {
     <template #header>
       <h3 class="va-h3">Корзина</h3>
     </template>
-    <VaDataTable :items="cart.map(el => ({ ...el, sum: el.count * el.price }))"
+
+    <VaDataTable noDataHtml="Корзина пуста" :items="cart"
       :columns="['id', 'title', 'count', 'price', 'sum', 'actions']">
+
+      <template #cell(count)="{ value, row }">
+        <VaCounter :min="1" v-model="row.itemKey.count" />
+      </template>
+
+      <template #cell(sum)="{ row }">
+        {{ row.itemKey.count * row.itemKey.price }}
+      </template>
+
       <template #cell(actions)="{ rowIndex }">
-        <VaButton preset="plain" icon="delete" class="ml-3" @click="cart.splice(rowIndex, 1)" />
+        <VaButton icon="clear" color="danger" @click="cart.splice(rowIndex, 1)">
+          Удалить
+        </VaButton>
       </template>
-      <template #cell(count)="{ rowIndex }">
-        <VaCounter :min="1" v-model="cart[rowIndex].count" />
+
+      <template #bodyAppend>
+        В корзине {{ countInCart }} товаров на сумму {{ sumInCart }}.
       </template>
+
     </VaDataTable>
+
+
+    <VaForm ref="formRef" class="flex flex-col items-baseline gap-6" style="padding: 16px;">
+      <VaInput v-model="user.firstName"  style="margin: 16px;"
+        label="Имя" />
+
+      <VaInput v-model="user.lastName" style="margin: 16px;"
+        label="Фамилия" />
+
+      <VaDateInput v-model="user.date" label="Дата доставки" manual-input style="margin: 16px;"
+        clearable />
+
+      <VaTimeInput v-model="user.time" label="Время доставки" style="margin: 16px;"
+        manual-input clearable />
+
+      <div style="margin: 16px;">
+        <span class="va-title">Способ оплаты</span>
+        <VaOptionList v-model="user.paymentMethod" :options="['СБП', 'Карта', 'Наличные']"
+          type="radio" />
+      </div>
+
+    </VaForm>
+
+
+
     <template #footer>
       <VaButton @click="doShowCart = false">Отправить заказ</VaButton>
     </template>
