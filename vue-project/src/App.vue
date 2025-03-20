@@ -35,15 +35,15 @@ const formData = ref({
 })
 
 function getGoods() {
-  fetch('https://cc-kirov.site/api.php?type=goods')
+  fetch('https://shop.vyatgeo.ru/api/goods/index.php')
     .then(response => response.json())
     .then(data => {
       goods.value = data.map(el => ({
         id: parseInt(el.id),
-        description: el.value.description,
-        price: parseInt(el.value.price),
-        title: el.value.title,
-        image: el.value.image,
+        description: el.description,
+        price: parseInt(el.price),
+        title: el.title,
+        image: el.image,
         count: 1
       }));
     })
@@ -65,15 +65,12 @@ function toCart(good) {
 }
 
 function addGood() {
-  fetch('https://cc-kirov.site/api.php', {
+  fetch('https://shop.vyatgeo.ru/api/goods/index.php', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      type: 'goods',
-      value: formData.value
-    })
+    body: JSON.stringify(formData.value)
   })
     .then(response => response.json())
     .then(data => {
@@ -83,15 +80,32 @@ function addGood() {
     .catch(error => console.error('Error:', error));
 }
 
-function delGood(id) {
-  fetch('https://cc-kirov.site/api.php', {
-    method: 'DELETE',
+function sendOrder() {
+
+  user.value.goods = JSON.stringify(cart.value)
+
+  fetch('https://shop.vyatgeo.ru/api/orders/index.php', {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      id
+    body: JSON.stringify(user.value)
+  })
+    .then(response => response.json())
+    .then(data => {
+      doShowCart.value = false
+      cart.value = []
+      init('Заказ отправлен!');
     })
+    .catch(error => console.error('Error:', error));
+}
+
+function delGood(id) {
+  fetch('https://shop.vyatgeo.ru/api/goods/index.php?id='+id, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   })
     .then(response => response.json())
     .then(() => {
@@ -185,6 +199,8 @@ onMounted(() => {
 
       <VaInput v-model="user.lastName" style="margin: 16px;"
         label="Фамилия" />
+      Адрес:
+      <textarea style="margin: 16px; width: 100%;" v-model="user.address"></textarea>
 
       <VaDateInput v-model="user.date" label="Дата доставки" manual-input style="margin: 16px;"
         clearable />
@@ -203,7 +219,7 @@ onMounted(() => {
 
 
     <template #footer>
-      <VaButton @click="doShowCart = false">Отправить заказ</VaButton>
+      <VaButton @click="sendOrder()">Отправить заказ</VaButton>
     </template>
   </VaModal>
 
